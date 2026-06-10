@@ -1,0 +1,28 @@
+.assessment-detail-container {
+    padding: var(--padding-container-lg, clamp(1.5rem, 1rem + 2.5vw, 3rem)) var(--padding-container-xl, clamp(2rem, 1.5rem + 15vw, 250px));
+    padding-top: calc(70px + clamp(1.5rem, 1rem + 2.5vw, 3.125rem));
+    background: var(--color-bg-secondary, #f6f8fb);
+    min-height: calc(120vh - 70px);
+}
+
+.breadcrumb-wrapper {
+    padding: 10px 0;
+}
+
+.assessment-timing-info {
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.assessment-timing-info:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .assessment-detail-container {
+        padding: var(--spacing-md, clamp(0.75rem, 0.6rem + 0.75vw, 1rem));
+        padding-top: calc(70px + var(--spacing-md, clamp(0.75rem, 0.6rem + 0.75vw, 1rem)));
+    }
+}

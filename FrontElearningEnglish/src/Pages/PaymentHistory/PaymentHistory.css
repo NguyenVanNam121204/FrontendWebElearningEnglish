@@ -1,0 +1,216 @@
+.payment-history-container {
+    min-height: calc(100vh - 70px);
+    padding: 40px 20px;
+    padding-top: calc(40px + 80px); /* Clear fixed header */
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Background decorative elements for premium feel */
+.payment-history-container::before {
+    content: "";
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: rgba(116, 207, 222, 0.08); /* Project Cyan color */
+    border-radius: 50%;
+    filter: blur(100px);
+    top: -150px;
+    left: -150px;
+    z-index: 0;
+}
+
+.payment-history-container::after {
+    content: "";
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    background: rgba(207, 79, 185, 0.1); /* Project Magenta color */
+    border-radius: 50%;
+    filter: blur(120px);
+    bottom: -200px;
+    right: -200px;
+    z-index: 0;
+}
+
+.payment-history-header {
+    text-align: left;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.payment-history-title {
+    font-size: clamp(2rem, 3vw, 2.5rem);
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.5px;
+}
+
+.payment-history-subtitle {
+    font-size: 1.1rem;
+    color: #64748b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats-highlight {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    padding: 16px 32px;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(116, 207, 222, 0.1);
+    border: 1px solid rgba(116, 207, 222, 0.2);
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.stats-highlight:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(116, 207, 222, 0.15);
+    border-color: #74CFDE;
+}
+
+.stat-card {
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #74CFDE;
+    line-height: 1.2;
+}
+
+/* List Container */
+.payment-list-container {
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.02);
+    position: relative;
+    z-index: 1;
+}
+
+.payment-list-header {
+    background: #f8fafc;
+    padding: 20px 32px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.header-column {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.payment-list {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.04);
+    position: relative;
+    z-index: 1;
+    border: 1px solid rgba(0,0,0,0.02);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 24px;
+}
+
+.empty-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+.empty-subtitle {
+    color: #64748b;
+    font-size: 1.1rem;
+}
+
+.empty-state-hint {
+    color: #94a3b8;
+    margin-top: 8px;
+}
+
+/* Pagination Wrapper - Cleaned up to avoid artifacts */
+.pagination-wrapper {
+    padding: 24px 32px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #f1f5f9;
+    background: white; /* Ensure it's not transparent if something is behind it */
+}
+
+/* Loading Wrapper */
+.loading-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    gap: 20px;
+}
+
+.spinner-border {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-width: 0.3em;
+    color: #74CFDE !important;
+}
+
+/* Error State */
+.error-state {
+    padding: 60px 40px;
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.03);
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 4rem;
+}
+
+@media (max-width: 767.98px) {
+    .payment-history-container {
+        padding: 24px 16px;
+        padding-top: calc(24px + 80px);
+    }
+    
+    .payment-list-header {
+        display: none;
+    }
+
+    .stats-highlight {
+        width: 100%;
+        justify-content: center;
+        margin-top: 20px;
+    }
+}

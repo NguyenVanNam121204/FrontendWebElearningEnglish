@@ -1,0 +1,13 @@
+.course-list-row {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* Clear local Col overrides */
+.course-list-row .col {
+  display: flex !important;
+  align-items: stretch;
+}
+

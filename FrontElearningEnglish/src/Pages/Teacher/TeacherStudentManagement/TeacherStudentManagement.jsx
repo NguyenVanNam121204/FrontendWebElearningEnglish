@@ -1,0 +1,254 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Container, Row, Col } from "react-bootstrap";
+import CustomPagination from "../../../Components/Common/Pagination/CustomPagination";
+import "./TeacherStudentManagement.css";
+import TeacherHeader from "../../../Components/Header/TeacherHeader";
+import Breadcrumb from "../../../Components/Common/Breadcrumb/Breadcrumb";
+import { useAuth } from "../../../Context/AuthContext";
+import { teacherService } from "../../../Services/teacherService";
+import { ROUTE_PATHS } from "../../../Routes/Paths";
+import StudentDetailModal from "../../../Components/Teacher/StudentDetailModal/StudentDetailModal";
+import AddStudentModal from "../../../Components/Teacher/AddStudentModal/AddStudentModal";
+import SuccessModal from "../../../Components/Common/SuccessModal/SuccessModal";
+import { FaPlus } from "react-icons/fa";
+
+export default function TeacherStudentManagement() {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  const { user, roles, isAuthenticated } = useAuth();
+  const [course, setCourse] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [searchTerm] = useState("");
+  
+  // Modal states
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [showStudentDetailModal, setShowStudentDetailModal] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const isAdmin = roles && roles.some(role => {
+    const roleName = typeof role === 'string' ? role : (role?.name || '');
+    return ["SuperAdmin", "ContentAdmin", "FinanceAdmin", "Admin"].includes(roleName);
+  });
+  
+  const isTeacher = (roles && roles.some(role => {
+    const roleName = typeof role === 'string' ? role : (role?.name || '');
+    return roleName === "Teacher";
+  })) || 
+  user?.teacherSubscription?.isTeacher === true || 
+  isAdmin;
+
+  const fetchCourseDetail = useCallback(async () => {
+    try {
+      const response = await teacherService.getCourseDetail(courseId);
+      if (response.data?.success && response.data?.data) {
+        setCourse(response.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching course detail:", err);
+    }
+  }, [courseId]);
+
+  const fetchStudents = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const params = {
+        pageNumber: currentPage,
+        pageSize: pageSize,
+        ...(searchTerm && { searchTerm: searchTerm })
+      };
+
+      const response = await teacherService.getCourseStudents(courseId, params);
+      
+      if (response.data?.success && response.data?.data) {
+        const data = response.data.data;
+        const items = data.items || data.Items || [];
+        const total = data.totalCount || data.TotalCount || 0;
+        const pages = data.totalPages || data.TotalPages || 1;
+        
+        setStudents(items);
+        setTotalCount(total);
+        setTotalPages(pages);
+      } else {
+        setError(response.data?.message || response.data?.Message || "Không thể tải danh sách học viên");
+      }
+    } catch (err) {
+      console.error("Error fetching students:", err);
+      setError("Không thể tải danh sách học viên");
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId, currentPage, pageSize, searchTerm]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isTeacher) {
+      navigate("/home");
+      return;
+    }
+
+    fetchCourseDetail();
+    fetchStudents();
+  }, [isAuthenticated, isTeacher, navigate, fetchCourseDetail, fetchStudents]);
+
+  const handleStudentClick = async (studentId) => {
+    try {
+      const response = await teacherService.getStudentDetail(courseId, studentId);
+      if (response.data?.success && response.data?.data) {
+        setSelectedStudent(response.data.data);
+        setShowStudentDetailModal(true);
+      }
+    } catch (err) {
+      console.error("Error fetching student detail:", err);
+    }
+  };
+
+  const handleAddStudentSuccess = () => {
+    setShowAddStudentModal(false);
+    setSuccessMessage("Đã thêm học viên vào khóa học thành công!");
+    setShowSuccessModal(true);
+    fetchStudents();
+    fetchCourseDetail(); // Refresh course to update totalStudents
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  if (!isAuthenticated || !isTeacher) {
+    return null;
+  }
+
+  const courseTitle = course?.title || course?.Title || "Khóa học";
+
+  return (
+    <>
+      <TeacherHeader />
+      <div className="teacher-student-management-container">
+        <Container fluid className="student-management-content">
+          <div className="breadcrumb-section pt-0">
+            <Breadcrumb
+              items={[
+                { label: "Quản lý khoá học", path: ROUTE_PATHS.TEACHER_COURSE_MANAGEMENT },
+                { label: courseTitle, path: `/teacher/course/${courseId}` },
+                { label: "Quản lý học viên", isCurrent: true }
+              ]}
+              showHomeIcon={false}
+            />
+          </div>
+          <div className="student-management-header d-flex justify-content-between align-items-center flex-column flex-md-row gap-3">
+            <h2 className="page-title">Quản lý học viên</h2>
+            <button 
+              className="add-student-btn d-flex align-items-center"
+              onClick={() => setShowAddStudentModal(true)}
+            >
+              <FaPlus className="add-icon" />
+              Thêm học viên
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="loading-message">Đang tải danh sách học viên...</div>
+          ) : error ? (
+            <div className="error-message">{error}</div>
+          ) : (
+            <>
+              <Row className="students-list g-4">
+                {students.length > 0 ? (
+                  students.map((student) => {
+                    const studentId = student.userId || student.UserId;
+                    const displayName = student.displayName || student.DisplayName || 
+                      `${student.firstName || student.FirstName || ""} ${student.lastName || student.LastName || ""}`.trim();
+                    const email = student.email || student.Email || "";
+                    const avatarUrl = student.avatarUrl || student.AvatarUrl;
+                    
+                    return (
+                      <Col key={studentId} xs={12} sm={6} md={4} lg={3}>
+                        <div 
+                          className="student-card d-flex align-items-center"
+                          onClick={() => handleStudentClick(studentId)}
+                        >
+                          <div className="student-avatar d-flex align-items-center justify-content-center shadow-sm border">
+                            <img 
+                              src={avatarUrl && avatarUrl.trim() ? avatarUrl : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || 'User')}&background=72D0DE&color=fff&size=128`} 
+                              alt={displayName} 
+                              onError={(e) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName || 'User')}&background=72D0DE&color=fff&size=128`;
+                              }}
+                            />
+                          </div>
+                          <div className="student-info">
+                            <h3 className="student-name">{displayName || "Chưa có tên"}</h3>
+                            <p className="student-email">{email}</p>
+                          </div>
+                          <div className="student-arrow">
+                            <span>›</span>
+                          </div>
+                        </div>
+                      </Col>
+                    );
+                  })
+                ) : (
+                  <Col xs={12}>
+                    <div className="no-students-message">
+                      {searchTerm ? "Không tìm thấy học viên nào" : "Chưa có học viên nào trong khóa học"}
+                    </div>
+                  </Col>
+                )}
+              </Row>
+
+              {/* Pagination */}
+              <CustomPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </Container>
+      </div>
+
+      {/* Student Detail Modal */}
+      <StudentDetailModal
+        show={showStudentDetailModal}
+        onClose={() => setShowStudentDetailModal(false)}
+        student={selectedStudent}
+        courseId={courseId}
+        onStudentRemoved={fetchStudents}
+      />
+
+      {/* Add Student Modal */}
+      <AddStudentModal
+        show={showAddStudentModal}
+        onClose={() => setShowAddStudentModal(false)}
+        onSuccess={handleAddStudentSuccess}
+        courseId={courseId}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Thành công"
+        message={successMessage}
+        autoClose={true}
+        autoCloseDelay={1500}
+      />
+    </>
+  );
+}
+

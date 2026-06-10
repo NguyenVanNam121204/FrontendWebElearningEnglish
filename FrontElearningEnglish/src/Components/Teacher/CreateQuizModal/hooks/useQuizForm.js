@@ -1,0 +1,151 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { quizService } from "../../../../Services/quizService";
+import { useEnums } from "../../../../Context/EnumContext";
+import { useEntityForm } from "../../../../hooks/useEntityForm";
+
+export const useQuizForm = (show, assessmentId, assessment, quizToUpdate, isAdmin, onSuccess, onClose) => {
+  const { getEnumOptions, loading: enumsLoading } = useEnums();
+  const isUpdateMode = !!quizToUpdate;
+
+  let maxDurationMinutes = null;
+  if (assessment) {
+    const timeLimitStr = assessment.timeLimit || assessment.TimeLimit || "00:00:00";
+    const parts = timeLimitStr.split(':');
+    if (parts.length === 3) {
+      maxDurationMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    }
+  }
+
+  const initialValues = useMemo(() => ({
+    title: "",
+    description: "",
+    instructions: "",
+    type: 1,
+    status: 1,
+    totalQuestions: "",
+    passingScore: "",
+    duration: "",
+    availableFrom: null,
+    showAnswersAfterSubmit: true,
+    showScoreImmediately: true,
+    shuffleQuestions: true,
+    shuffleAnswers: true,
+    maxAttempts: "",
+  }), []);
+
+  const validate = useCallback((values) => {
+    const errors = {};
+    if (!values.title?.trim()) {
+      errors.title = "Tiêu đề Quiz là bắt buộc";
+    } else if (values.title.length > 200) {
+      errors.title = "Tiêu đề không được vượt quá 200 ký tự";
+    }
+
+    if (!values.totalQuestions || isNaN(parseInt(values.totalQuestions))) {
+      errors.totalQuestions = "Số câu hỏi là bắt buộc";
+    }
+
+    if (!values.duration || isNaN(parseInt(values.duration))) {
+      errors.duration = "Thời gian làm bài là bắt buộc";
+    } else if (maxDurationMinutes > 0 && parseInt(values.duration) > maxDurationMinutes) {
+      errors.duration = `Vượt quá giới hạn (${maxDurationMinutes} phút của Assessment)`;
+    }
+
+    return errors;
+  }, [maxDurationMinutes]);
+
+  const onSubmit = useCallback(async (values) => {
+    const submitData = {
+      ...values,
+      assessmentId: parseInt(assessmentId),
+      type: parseInt(values.type),
+      status: parseInt(values.status),
+      totalQuestions: parseInt(values.totalQuestions),
+      passingScore: values.passingScore ? parseFloat(values.passingScore) : null,
+      duration: parseInt(values.duration),
+      availableFrom: values.availableFrom ? values.availableFrom.toISOString() : null,
+      maxAttempts: values.maxAttempts ? parseInt(values.maxAttempts) : null,
+    };
+
+    let response;
+    if (isUpdateMode && quizToUpdate) {
+      const quizId = quizToUpdate.quizId || quizToUpdate.QuizId;
+      response = isAdmin
+        ? await quizService.updateAdminQuiz(quizId, submitData)
+        : await quizService.updateQuiz(quizId, submitData);
+    } else {
+      response = isAdmin
+        ? await quizService.createAdminQuiz(submitData)
+        : await quizService.createQuiz(submitData);
+    }
+
+    if (response.data?.success) {
+      onSuccess?.();
+      onClose();
+    } else {
+      throw new Error(response.data?.message || "Thao tác thất bại");
+    }
+  }, [assessmentId, isUpdateMode, quizToUpdate, isAdmin, onSuccess, onClose]);
+
+  const form = useEntityForm(initialValues, validate, onSubmit);
+  const { setFormData, resetForm } = form;
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [computedScore, setComputedScore] = useState(null);
+
+  // Load quiz data or reset
+  useEffect(() => {
+    if (!show) return;
+
+    if (isUpdateMode && quizToUpdate) {
+      const loadQuizData = async () => {
+        setLoadingQuiz(true);
+        try {
+          const quizId = quizToUpdate.quizId || quizToUpdate.QuizId;
+          const response = isAdmin
+            ? await quizService.getAdminQuizById(quizId)
+            : await quizService.getTeacherQuizById(quizId);
+
+          if (response.data?.success && response.data?.data) {
+            const quiz = response.data.data;
+            const totalScore = quiz.totalPossibleScore ?? quiz.TotalPossibleScore ?? 0;
+            setComputedScore(totalScore);
+            setFormData({
+              title: quiz.title || quiz.Title || "",
+              description: quiz.description || quiz.Description || "",
+              instructions: quiz.instructions || quiz.Instructions || "",
+              type: quiz.type ?? quiz.Type ?? 1,
+              status: quiz.status ?? quiz.Status ?? 1,
+              totalQuestions: (quiz.totalQuestions ?? quiz.TotalQuestions ?? "").toString(),
+              passingScore: (quiz.passingScore ?? quiz.PassingScore ?? "").toString(),
+              duration: (quiz.duration ?? quiz.Duration ?? "").toString(),
+              availableFrom: quiz.availableFrom ? new Date(quiz.availableFrom) : null,
+              showAnswersAfterSubmit: quiz.showAnswersAfterSubmit ?? quiz.ShowAnswersAfterSubmit ?? true,
+              showScoreImmediately: quiz.showScoreImmediately ?? quiz.ShowScoreImmediately ?? true,
+              shuffleQuestions: quiz.shuffleQuestions ?? quiz.ShuffleQuestions ?? true,
+              shuffleAnswers: quiz.shuffleAnswers ?? quiz.ShuffleAnswers ?? true,
+              maxAttempts: (quiz.maxAttempts ?? quiz.MaxAttempts ?? "").toString(),
+            });
+          }
+        } catch (error) {
+          console.error("Error loading quiz:", error);
+        } finally {
+          setLoadingQuiz(false);
+        }
+      };
+      loadQuizData();
+    } else {
+      resetForm();
+      setComputedScore(null);
+    }
+  }, [show, isUpdateMode, quizToUpdate, isAdmin, setFormData, resetForm]);
+
+  return {
+    ...form,
+    loadingQuiz,
+    enumsLoading,
+    maxDurationMinutes,
+    computedScore,
+    quizTypeOptions: getEnumOptions('QuizType'),
+    quizStatusOptions: getEnumOptions('QuizStatus'),
+  };
+};

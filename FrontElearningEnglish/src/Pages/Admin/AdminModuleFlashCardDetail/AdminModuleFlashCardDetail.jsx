@@ -1,0 +1,242 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Container, Button, Card, Row, Col } from "react-bootstrap";
+import { FaPlus, FaEdit, FaTrash, FaVolumeUp } from "react-icons/fa";
+import { useAuth } from "../../../Context/AuthContext";
+import Breadcrumb from "../../../Components/Common/Breadcrumb/Breadcrumb";
+import { adminService } from "../../../Services/adminService";
+import { courseService } from "../../../Services/courseService";
+import { lessonService } from "../../../Services/lessonService";
+import { flashcardService } from "../../../Services/flashcardService";
+import { ROUTE_PATHS } from "../../../Routes/Paths";
+import CreateFlashCardModal from "../../../Components/Teacher/CreateFlashCardModal/CreateFlashCardModal";
+import SuccessModal from "../../../Components/Common/SuccessModal/SuccessModal";
+import NotificationModal from "../../../Components/Common/NotificationModal/NotificationModal";
+import ConfirmModal from "../../../Components/Common/ConfirmModal/ConfirmModal";
+import "./AdminModuleFlashCardDetail.css";
+
+export default function AdminModuleFlashCardDetail() {
+  const { courseId, lessonId, moduleId } = useParams();
+  const navigate = useNavigate();
+  const { roles, isAuthenticated } = useAuth();
+  
+  const [module, setModule] = useState(null);
+  const [course, setCourse] = useState(null);
+  const [lesson, setLesson] = useState(null);
+  const [flashcards, setFlashcards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Modals
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [flashcardToUpdate, setFlashcardToUpdate] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [flashcardToDelete, setFlashcardToDelete] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [notification, setNotification] = useState({ isOpen: false, type: "info", message: "" });
+
+  const isAdmin = roles.some(role => ["SuperAdmin", "ContentAdmin"].includes(role));
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [moduleRes, flashcardsRes, courseRes, lessonRes] = await Promise.all([
+        adminService.getModuleById(moduleId),
+        flashcardService.getAdminFlashcardsByModule(moduleId),
+        courseService.getCourseById(courseId),
+        lessonService.getLessonById(lessonId)
+      ]);
+
+      if (moduleRes.data?.success) setModule(moduleRes.data.data);
+      if (flashcardsRes.data?.success) setFlashcards(flashcardsRes.data.data || []);
+      if (courseRes.data?.success) setCourse(courseRes.data.data);
+      if (lessonRes.data?.success) setLesson(lessonRes.data.data);
+      
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId, lessonId, moduleId]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin) {
+      navigate("/home");
+      return;
+    }
+    fetchData();
+  }, [isAuthenticated, isAdmin, navigate, fetchData]);
+
+  const handleCreateSuccess = () => {
+    setSuccessMessage("Tạo flashcard thành công!");
+    setShowSuccessModal(true);
+    fetchData();
+  };
+
+  const handleUpdateSuccess = () => {
+    setSuccessMessage("Cập nhật flashcard thành công!");
+    setShowSuccessModal(true);
+    fetchData();
+  };
+
+  const handleDeleteClick = (card) => {
+    setFlashcardToDelete(card);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!flashcardToDelete) return;
+    try {
+      // Backend returns FlashCardId (capital C)
+      const cardId = flashcardToDelete.flashCardId || 
+                     flashcardToDelete.FlashCardId || 
+                     flashcardToDelete.flashcardId || 
+                     flashcardToDelete.FlashcardId;
+      
+      if (!cardId) {
+        console.error("Flashcard ID not found. Available keys:", Object.keys(flashcardToDelete));
+        setNotification({ isOpen: true, type: "error", message: "Không tìm thấy ID của flashcard. Vui lòng thử lại." });
+        return;
+      }
+      
+      const res = await flashcardService.deleteAdminFlashcard(cardId);
+      if (res.data?.success) {
+        setSuccessMessage("Xóa flashcard thành công!");
+        setShowSuccessModal(true);
+        setShowDeleteModal(false);
+        fetchData();
+      } else {
+        setNotification({ isOpen: true, type: "error", message: "Xóa thất bại: " + res.data?.message });
+      }
+    } catch (err) {
+      console.error("Error deleting flashcard:", err);
+      setNotification({ isOpen: true, type: "error", message: "Lỗi khi xóa flashcard: " + (err.response?.data?.message || err.message) });
+    }
+  };
+
+  const playAudio = (url) => {
+      if(!url) return;
+      new Audio(url).play();
+  };
+
+  if (!isAuthenticated || !isAdmin) {
+    return null;
+  }
+
+  return (
+    <div className="admin-module-flashcard-detail-container">
+      <Container fluid className="p-0">
+        <div className="breadcrumb-section mt-3">
+          <Breadcrumb
+            items={[
+              { label: "Admin: Khóa học", path: ROUTE_PATHS.ADMIN.COURSES },
+              { label: course?.title || course?.Title || "Khóa học", path: `/admin/courses/${courseId}` },
+              { label: lesson?.title || lesson?.Title || "Bài học", path: `/admin/courses/${courseId}/lesson/${lessonId}?moduleId=${moduleId}` },
+              { label: "Quản lý từ vựng", isCurrent: true }
+            ]}
+            showHomeIcon={false}
+          />
+        </div>
+
+        <div className="d-flex align-items-center justify-content-between mb-4 mt-4">
+          <div className="d-flex align-items-center gap-3">
+            <div>
+                <h2 className="mb-0 fw-bold text-primary">Quản lý từ vựng</h2>
+                <div className="text-muted">{module?.name || "Module"} ({flashcards.length} từ)</div>
+            </div>
+          </div>
+          <Button variant="primary" onClick={() => { setFlashcardToUpdate(null); setShowCreateModal(true); }}>
+              <FaPlus className="me-2" /> Thêm Flashcard
+          </Button>
+        </div>
+
+        {loading ? (
+           <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+        ) : flashcards.length === 0 ? (
+           <div className="text-center py-5 bg-light rounded text-muted">
+               <p>Chưa có từ vựng nào trong bộ này.</p>
+               <Button variant="primary" onClick={() => { setFlashcardToUpdate(null); setShowCreateModal(true); }}>Tạo từ vựng đầu tiên</Button>
+           </div>
+        ) : (
+           <Row xs={1} md={2} lg={3} className="g-4">
+               {flashcards.map((card, idx) => (
+                   <Col key={card.flashCardId || card.FlashCardId || card.flashcardId || card.FlashcardId || idx}>
+                      <Card className="h-100 border-0 shadow-sm flashcard-item">
+                          <div className="position-relative">
+                              <Card.Img 
+                                  variant="top" 
+                                  src={card.imageUrl || card.ImageUrl || "https://via.placeholder.com/300x200?text=No+Image"} 
+                                  style={{height: '200px', objectFit: 'cover'}}
+                              />
+                              {(card.audioUrl || card.AudioUrl) && (
+                                  <Button 
+                                      variant="light" 
+                                      className="position-absolute bottom-0 end-0 m-2 rounded-circle p-2 shadow-sm"
+                                      onClick={() => playAudio(card.audioUrl || card.AudioUrl)}
+                                  >
+                                      <FaVolumeUp />
+                                  </Button>
+                              )}
+                          </div>
+                          <Card.Body>
+                              <div className="d-flex justify-content-between align-items-start mb-2">
+                                  <h5 className="fw-bold mb-0 text-primary">{card.word}</h5>
+                                  <span className="badge bg-secondary">{card.partOfSpeech}</span>
+                              </div>
+                              <div className="text-muted fst-italic mb-2">{card.pronunciation}</div>
+                              <p className="card-text border-top pt-2 mt-2">{card.meaning}</p>
+                              
+                              <div className="d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                                  <Button variant="outline-primary" size="sm" onClick={() => { setFlashcardToUpdate(card); setShowCreateModal(true); }}>
+                                      <FaEdit /> Sửa
+                                  </Button>
+                                  <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(card)}>
+                                      <FaTrash /> Xóa
+                                  </Button>
+                              </div>
+                          </Card.Body>
+                      </Card>
+                   </Col>
+               ))}
+           </Row>
+        )}
+      </Container>
+
+      <CreateFlashCardModal 
+        show={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={flashcardToUpdate ? handleUpdateSuccess : handleCreateSuccess}
+        moduleId={moduleId}
+        flashcardToUpdate={flashcardToUpdate}
+        isAdmin={true}
+      />
+
+      <ConfirmModal 
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Xóa Flashcard?"
+        message="Hành động này không thể hoàn tác."
+        confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+      />
+
+      <SuccessModal 
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        title="Thành công"
+        message={successMessage}
+        autoClose={true}
+        autoCloseDelay={1500}
+      />
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        type={notification.type}
+        message={notification.message}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,54 @@
+.custom-pagination-wrapper {
+    width: 100%;
+}
+
+/* Nút Active (Trang hiện tại) */
+.custom-pagination .page-item.active .page-link {
+    background-color: #2463EB !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: none !important;
+    border-radius: 6px !important;
+}
+
+[data-theme="dark"] .custom-pagination .page-item.active .page-link {
+    background-color: #3b82f6 !important;
+    border: none !important;
+}
+
+/* Nút bình thường: bỏ viền, trong suốt */
+.custom-pagination .page-link {
+    color: #4b5563;
+    border: none !important;
+    margin: 0 4px;
+    border-radius: 6px !important;
+    transition: all 0.2s ease;
+    background-color: transparent !important;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .custom-pagination .page-link {
+    color: #9ca3af;
+}
+
+/* Hover (Hold chuột chuyển màu xanh nhạt) */
+.custom-pagination .page-link:hover {
+    background-color: #e0e7ff !important;
+    color: #2463EB !important;
+}
+
+[data-theme="dark"] .custom-pagination .page-link:hover {
+    background-color: #374151 !important;
+    color: #93c5fd !important;
+}
+
+/* Disabled state */
+.custom-pagination .page-item.disabled .page-link {
+    background-color: transparent !important;
+    color: #d1d5db !important;
+    border: none !important;
+}
+
+[data-theme="dark"] .custom-pagination .page-item.disabled .page-link {
+    color: #4b5563 !important;
+}

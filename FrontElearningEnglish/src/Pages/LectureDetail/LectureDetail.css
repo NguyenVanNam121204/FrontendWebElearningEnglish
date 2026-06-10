@@ -1,0 +1,214 @@
+.lecture-page-wrapper {
+    min-height: 100vh;
+    padding-top: 70px; /* Offset for fixed MainHeader */
+    background-color: #f9fafb;
+    display: flex;
+    flex-direction: column;
+}
+
+[data-theme="dark"] .lecture-page-wrapper {
+    background-color: #0f172a;
+}
+
+.lecture-boxed-container {
+    background-color: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 800px; /* Fixed height for consistent look */
+}
+
+[data-theme="dark"] .lecture-boxed-container {
+    background-color: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.lecture-content-wrapper {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+.lecture-sidebar {
+    width: 280px;
+    min-width: 280px;
+    background-color: #fafbfc;
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .lecture-sidebar {
+    background-color: #111827;
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+.lecture-main-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .lecture-main-wrapper {
+    background-color: #1e293b;
+}
+
+.lecture-content-section {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #ffffff;
+    padding: 20px;
+}
+
+[data-theme="dark"] .lecture-content-section {
+    background-color: #1e293b;
+}
+
+.lecture-content-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 0 60px 0;
+}
+
+/* Scrollbar */
+.lecture-content-section::-webkit-scrollbar {
+    width: 10px;
+}
+
+.lecture-content-section::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+[data-theme="dark"] .lecture-content-section::-webkit-scrollbar-track {
+    background: #2d2d2d;
+}
+
+.lecture-content-section::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 5px;
+}
+
+.lecture-content-section::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+[data-theme="dark"] .lecture-content-section::-webkit-scrollbar-thumb {
+    background: #4b5563;
+}
+
+[data-theme="dark"] .lecture-content-section::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+}
+
+/* ============================================
+   LOADING & ERROR STATES
+   ============================================ */
+
+.lecture-loading,
+.lecture-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    padding: 40px;
+}
+
+.lecture-loading {
+    gap: 16px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top-color: #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.lecture-loading p,
+.lecture-error p {
+    font-size: 16px;
+    color: #6b7280;
+    margin: 0;
+}
+
+[data-theme="dark"] .lecture-loading p,
+[data-theme="dark"] .lecture-error p {
+    color: #9ca3af;
+}
+
+/* ============================================
+   RESPONSIVE - Bootstrap Breakpoints
+   ============================================ */
+
+/* Mobile Sidebar Overlay */
+.lecture-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .lecture-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .lecture-sidebar:not(.collapsed) {
+        transform: translateX(0);
+    }
+
+    .lecture-sidebar-overlay {
+        display: block;
+    }
+
+    .lecture-content-container {
+        padding: 0 16px 24px 16px;
+    }
+}
+
+/* Resizer */
+.sidebar-resizer {
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+    z-index: 5;
+    flex-shrink: 0;
+    margin-left: -3px;
+    margin-right: -3px;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer:active {
+    background-color: rgba(13, 110, 253, 0.2);
+}
+

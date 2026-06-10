@@ -1,0 +1,184 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { Card, Table, Badge, Spinner, Button } from "react-bootstrap";
+import CustomPagination from "../../../Common/Pagination/CustomPagination";
+import { quizAttemptService } from "../../../../Services/quizAttemptService";
+import QuizAttemptDetailModal from "../QuizAttemptDetailModal/QuizAttemptDetailModal";
+import NotificationModal from "../../../Common/NotificationModal/NotificationModal";
+import "./QuizAttemptList.css";
+
+export default function QuizAttemptList({ quizId, quizTitle, onBack, isAdmin = false }) {
+  const [attempts, setAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [selectedAttempt, setSelectedAttempt] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [notification, setNotification] = useState({ isOpen: false, type: "info", message: "" });
+
+  const fetchAttempts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = isAdmin
+        ? await quizAttemptService.getAdminQuizAttemptsPaged(quizId, currentPage, pageSize)
+        : await quizAttemptService.getQuizAttemptsPaged(quizId, currentPage, pageSize);
+      if (response.data?.success) {
+        const data = response.data.data || {};
+        const items = data.items || data.data || [];
+        setAttempts(items);
+        setTotalPages(data.totalPages || Math.ceil((data.totalCount || 0) / pageSize));
+      }
+    } catch (err) {
+      console.error("Error fetching attempts:", err);
+      setError("Không thể tải danh sách bài làm");
+    } finally {
+      setLoading(false);
+    }
+  }, [quizId, currentPage, pageSize, isAdmin]);
+
+  useEffect(() => {
+    fetchAttempts();
+  }, [fetchAttempts]);
+
+  const handleViewDetail = async (attempt) => {
+    try {
+      const attemptId = attempt.attemptId || attempt.AttemptId;
+      const response = isAdmin
+        ? await quizAttemptService.getAdminAttemptDetailForReview(attemptId)
+        : await quizAttemptService.getTeacherAttemptDetailForReview(attemptId);
+      if (response.data?.success) {
+        setSelectedAttempt(response.data.data);
+        setShowDetailModal(true);
+      }
+    } catch (err) {
+      console.error("Error fetching attempt detail:", err);
+      setNotification({ isOpen: true, type: "error", message: "Không thể tải chi tiết bài làm" });
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const statusNum = status !== undefined ? status : (status !== undefined ? status : 0);
+    if (statusNum === 2 || statusNum === "Completed" || statusNum === "Hoàn thành") {
+      return <Badge bg="success">Hoàn thành</Badge>;
+    } else if (statusNum === 1 || statusNum === "InProgress" || statusNum === "Đang làm") {
+      return <Badge bg="warning">Đang làm</Badge>;
+    } else if (statusNum === 0 || statusNum === "NotStarted" || statusNum === "Chưa bắt đầu") {
+      return <Badge bg="secondary">Chưa bắt đầu</Badge>;
+    }
+    return <Badge bg="secondary">N/A</Badge>;
+  };
+
+  if (loading && attempts.length === 0) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="quiz-attempt-list">
+      <Card className="mb-3">
+        <Card.Header>
+          <h5 className="mb-0">Bài Quiz: {quizTitle}</h5>
+        </Card.Header>
+        <Card.Body>
+          {error && <div className="alert alert-danger">{error}</div>}
+          
+          {attempts.length === 0 ? (
+            <div className="text-center text-muted py-5">
+              <p>Chưa có bài làm nào</p>
+            </div>
+          ) : (
+            <>
+              <Table responsive hover>
+                <thead>
+                  <tr>
+                    <th>Học sinh</th>
+                    <th>Lần làm</th>
+                    <th>Ngày bắt đầu</th>
+                    <th>Ngày nộp</th>
+                    <th>Trạng thái</th>
+                    <th>Điểm</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attempts.map((attempt) => {
+                    const attemptId = attempt.attemptId || attempt.AttemptId;
+                    const userName = attempt.userName || attempt.UserName || "N/A";
+                    const attemptNumber = attempt.attemptNumber !== undefined ? attempt.attemptNumber : (attempt.AttemptNumber !== undefined ? attempt.AttemptNumber : 1);
+                    const startedAt = attempt.startedAt || attempt.StartedAt;
+                    const submittedAt = attempt.submittedAt || attempt.SubmittedAt;
+                    const status = attempt.status !== undefined ? attempt.status : (attempt.Status !== undefined ? attempt.Status : 0);
+                    const totalScore = attempt.totalScore !== undefined ? attempt.totalScore : (attempt.TotalScore !== undefined ? attempt.TotalScore : null);
+
+                    return (
+                      <tr key={attemptId}>
+                        <td>{userName}</td>
+                        <td>{attemptNumber}</td>
+                        <td>{startedAt ? new Date(startedAt).toLocaleString("vi-VN") : "N/A"}</td>
+                        <td>{submittedAt ? new Date(submittedAt).toLocaleString("vi-VN") : "-"}</td>
+                        <td>{getStatusBadge(status)}</td>
+                        <td>
+                          {totalScore !== null && totalScore !== undefined ? (
+                            <span className="fw-bold">{totalScore}</span>
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td>
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={() => handleViewDetail(attempt)}
+                            className="view-btn"
+                          >
+                            Xem
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+
+              {/* CustomPagination component will handle the null check internally if totalCount is accurate, otherwise we calculate totalCount from totalPages */}
+              <CustomPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalCount={totalPages * pageSize} 
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                showInfo={false}
+              />
+            </>
+          )}
+        </Card.Body>
+      </Card>
+
+      {selectedAttempt && (
+        <QuizAttemptDetailModal
+          show={showDetailModal}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedAttempt(null);
+          }}
+          attempt={selectedAttempt}
+          quizId={quizId}
+          isAdmin={isAdmin}
+        />
+      )}
+
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={() => setNotification({ ...notification, isOpen: false })}
+        type={notification.type}
+        message={notification.message}
+      />
+    </div>
+  );
+}
+

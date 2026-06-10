@@ -1,0 +1,222 @@
+.module-card {
+    background: var(--color-bg-primary, white);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: visible;
+    min-height: 100px;
+}
+
+.module-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(65, 214, 227, 0.15);
+}
+
+.module-card.completed {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
+}
+
+.module-card-icon-container {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    position: relative;
+    z-index: 1;
+    border-radius: 16px;
+    overflow: hidden;
+    background: transparent !important;
+}
+
+.module-card-img {
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 16px;
+    min-height: unset !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.module-card-icon-inner {
+    width: 64px; /* Matching Admin size */
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Slightly larger for Duotone details */
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Icon size standardization */
+.module-card-icon-inner svg {
+    font-size: 28px !important;
+    width: 28px;
+    height: 28px;
+}
+
+.module-card:hover .module-card-icon-inner {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+/* Admin Gradient Parity */
+.module-card-icon-inner.lecture {
+    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+    color: #0284c7 !important;
+}
+
+.module-card-icon-inner.flashcard {
+    background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+    color: #9333ea !important;
+}
+
+.module-card-icon-inner.assessment {
+    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%) !important;
+    color: #db2777 !important;
+}
+
+/* Fallback for other cases */
+.module-card-icon-inner.assignment {
+    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%) !important;
+    color: #db2777 !important;
+}
+
+.module-card-icon-inner.quiz {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    color: #d97706 !important;
+}
+
+.module-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.module-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary, #1f2937);
+    margin: 0 0 6px 0;
+}
+
+.module-description {
+    font-size: 14px;
+    color: var(--color-text-secondary, #6b7280);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.module-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.pronunciation-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+    position: relative;
+}
+
+/* Màu xám khi chưa hoàn thành flashcard - disabled */
+.pronunciation-btn.pronunciation-disabled {
+    background: var(--color-border-light, #e5e7eb);
+    color: var(--color-text-secondary, #6b7280);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Màu xanh cyan khi flashcard hoàn thành (chưa hoàn thành pronunciation) */
+.pronunciation-btn.pronunciation-pending {
+    background: var(--color-secondary-cyan, #41d6e3);
+    color: white;
+    cursor: pointer;
+}
+
+.pronunciation-btn.pronunciation-pending:hover {
+    background: #35b8c4;
+}
+
+/* Màu xanh khi đã hoàn thành pronunciation */
+.pronunciation-btn.pronunciation-completed {
+    background: var(--color-secondary-cyan, #41d6e3);
+    color: white;
+}
+
+.pronunciation-btn.pronunciation-completed:hover {
+    background: #35b8c4;
+}
+
+.pronunciation-btn svg {
+    font-size: 12px;
+}
+
+.module-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.module-action-btn svg {
+    font-size: 14px;
+}
+
+.module-action-btn.completed-btn {
+    background: var(--color-status-success, #10b981);
+}
+
+.module-action-btn.continue-btn,
+.module-action-btn.start-btn {
+    background: var(--color-secondary-cyan, #41d6e3);
+}
+
+.module-action-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .module-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .module-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .module-action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}

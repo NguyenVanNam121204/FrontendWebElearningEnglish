@@ -1,0 +1,131 @@
+import React, { useState } from "react";
+import { Modal } from "react-bootstrap";
+import "./AddStudentModal.css";
+import { teacherService } from "../../../Services/teacherService";
+import { adminService } from "../../../Services/adminService";
+import PremiumCloseButton from "../../Common/PremiumCloseButton/PremiumCloseButton";
+import { FaEnvelope, FaSpinner } from "react-icons/fa";
+
+export default function AddStudentModal({ show, onClose, onSuccess, courseId, isAdmin = false }) {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [touched, setTouched] = useState(false);
+
+  const handleBlur = () => {
+    setTouched(true);
+    validateEmail();
+  };
+
+  const validateEmail = () => {
+    if (!email.trim()) {
+      setError("Vui lòng nhập email học viên");
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Email không hợp lệ");
+      return false;
+    }
+    setError("");
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateEmail()) {
+      setTouched(true);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = isAdmin 
+        ? await adminService.addStudentToCourse(courseId, email.trim())
+        : await teacherService.addStudentToCourse(courseId, email.trim());
+
+      if (response.data?.success || response.data?.Success) {
+        setEmail("");
+        onSuccess();
+      } else {
+        setError(response.data?.message || response.data?.Message || "Không thể thêm học viên");
+      }
+    } catch (err) {
+      console.error("Error adding student:", err);
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.Message || 
+                          "Đã xảy ra lỗi khi thêm học viên. Vui lòng thử lại.";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setEmail("");
+    setError("");
+    setLoading(false);
+    onClose();
+  };
+
+  return (
+    <Modal show={show} onHide={handleClose} centered className="modal-modern add-student-modal">
+      <Modal.Header closeButton={false}>
+        <Modal.Title className="fw-bold modal-title-centered">Thêm học sinh vào lớp</Modal.Title>
+        <PremiumCloseButton onClick={onClose} />
+      </Modal.Header>
+      <Modal.Body>
+        <form onSubmit={handleSubmit} className="add-student-form">
+          <div className="form-group">
+            <label htmlFor="student-email" className="fw-600 mb-2">
+              Email học viên
+            </label>
+            <input
+              id="student-email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (touched) validateEmail();
+              }}
+              onBlur={handleBlur}
+              placeholder="Nhập email học viên..."
+              className={`form-input ${touched && error ? "error" : ""}`}
+              disabled={loading}
+              autoFocus
+            />
+            {touched && error && <div className="asm-error-msg">{error}</div>}
+          </div>
+
+          <div className="form-actions">
+            <button
+              type="button"
+              className="cancel-btn"
+              onClick={handleClose}
+              disabled={loading}
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={loading || !email.trim()}
+            >
+              {loading ? (
+                <>
+                  <FaSpinner className="spinner" />
+                  Đang thêm...
+                </>
+              ) : (
+                "Thêm học viên"
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal.Body>
+    </Modal>
+  );
+}
+
